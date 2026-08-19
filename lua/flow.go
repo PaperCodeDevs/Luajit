@@ -100,7 +100,7 @@ func (c *gen) skipNoise(pc, lim int) int {
 }
 
 func isLoop(code byte) bool {
-	return code == op.OpLOOP || code == op.OpILOOP || code == op.OpJLOOP
+	return code == op.OpLOOP
 }
 
 func isIterL(code byte) bool {

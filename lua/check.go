@@ -18,20 +18,23 @@ type Cover struct {
 	NeedTab   int
 	MissTab   int
 	BadOp     int
+	NeedFn    int
+	MissFn    int
 	Miss      []string
 }
 
 func (c Cover) Ok() bool {
-	return c.MissElse == 0 && c.MissLoop == 0 && c.MissForIn == 0 && c.MissTab == 0 && c.BadOp == 0
+	return c.MissElse == 0 && c.MissLoop == 0 && c.MissForIn == 0 && c.MissTab == 0 && c.BadOp == 0 && c.MissFn == 0
 }
 
 func (c Cover) String() string {
-	return fmt.Sprintf("else %d/%d loop %d/%d forin %d/%d tab %d/%d badop=%d",
+	return fmt.Sprintf("else %d/%d loop %d/%d forin %d/%d tab %d/%d badop=%d fn %d/%d",
 		c.NeedElse-c.MissElse, c.NeedElse,
 		c.NeedLoop-c.MissLoop, c.NeedLoop,
 		c.NeedForIn-c.MissForIn, c.NeedForIn,
 		c.NeedTab-c.MissTab, c.NeedTab,
-		c.BadOp)
+		c.BadOp,
+		c.NeedFn-c.MissFn, c.NeedFn)
 }
 
 func Audit(d *parse.Dump, src string) Cover {
@@ -102,6 +105,7 @@ func Audit(d *parse.Dump, src string) Cover {
 	if cov.BadOp > 0 {
 		cov.note("badop")
 	}
+	auditFn(d, src, &cov)
 	return cov
 }
 
@@ -255,23 +259,4 @@ func lineHas(src, word string) bool {
 		}
 	}
 	return false
-}
-
-func countBadOp(src string) int {
-	n := 0
-	for _, line := range strings.Split(src, "\n") {
-		s := strings.TrimSpace(line)
-		if !strings.HasPrefix(s, "-- ") {
-			continue
-		}
-		name := strings.Fields(s)
-		if len(name) < 2 {
-			continue
-		}
-		switch name[1] {
-		case "LOOP", "ILOOP", "JLOOP", "ITERC", "ITERN", "ITERL", "IITERL", "TSETM", "VARG", "BAND", "BOR", "BXOR", "BSHL", "BSHR", "BSAR":
-			n++
-		}
-	}
-	return n
 }

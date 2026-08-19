@@ -34,6 +34,8 @@ func ToStd(code byte) byte {
 		return code - 0x2D + 0x34
 	case code >= 0x3A && code <= 0x40:
 		return code - 0x3A + 0x2D
+	case code >= 0x41 && code <= 0x5F:
+		return code
 	default:
 		return code
 	}
@@ -48,4 +50,18 @@ func Norm(version, code byte) byte {
 
 func Name(version, code byte) string {
 	return NameOf(Norm(version, code))
+}
+
+func DumpOK(std byte) bool {
+	if int(std) >= OpMax {
+		return false
+	}
+	if std >= OpFUNCF || std == OpILOOP || std == OpJLOOP {
+		return false
+	}
+	return true
+}
+
+func MagicRet(a byte, d uint16) bool {
+	return a == 13 && d == 5120
 }

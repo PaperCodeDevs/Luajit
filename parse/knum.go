@@ -54,6 +54,13 @@ func (p *Proto) Child(d uint16) *Proto {
 	return k.Child
 }
 
+func (p *Proto) FNew(d uint16, c byte) *Proto {
+	if int(d) < len(p.KGC) {
+		return p.Child(d)
+	}
+	return p.Child(uint16(c))
+}
+
 func (p *Proto) Num(d uint16) (KNum, bool) {
 	if int(d) >= len(p.KNum) {
 		return KNum{}, false

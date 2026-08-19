@@ -10,6 +10,10 @@ import (
 
 func (c *gen) stmt(in parse.Ins, code byte) {
 	a := int(in.A)
+	if code == op.OpISNES && op.MagicRet(in.A, in.D) {
+		c.line("return")
+		return
+	}
 	switch code {
 	case op.OpMOV:
 		c.set(a, c.get(int(in.D)))
@@ -44,7 +48,7 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpUSETP:
 		c.line("%s = %s", c.uv(a), pri(in.D))
 	case op.OpFNEW:
-		ch := c.p.Child(in.D)
+		ch := c.p.FNew(in.D, in.C)
 		if ch != nil {
 			if c.used == nil {
 				c.used = map[*parse.Proto]bool{}
@@ -116,6 +120,9 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.set(a, "bit.arshift("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
 	case op.OpJMP, op.OpUCLO, op.OpLOOP, op.OpILOOP, op.OpJLOOP, op.OpFORL, op.OpIFORL, op.OpJFORL, op.OpITERL, op.OpIITERL, op.OpJITERL, op.OpISNEXT, op.OpITERC, op.OpITERN:
 	default:
+		if !op.DumpOK(code) {
+			return
+		}
 		c.line("-- %s %d %d", op.Name(c.d.Version, in.Op), in.A, in.D)
 	}
 }
