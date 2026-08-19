@@ -8,8 +8,8 @@ import (
 	"github.com/PaperCodeDevs/Luajit/parse"
 )
 
-func (c *gen) dup(d uint16) string {
-	k, ok := c.p.GC(d)
+func (c *gen) dup(d uint16, cc byte) string {
+	k, ok := c.p.GC(c.p.GCKey(d, cc))
 	if !ok || k.Tab == nil {
 		return "{}"
 	}

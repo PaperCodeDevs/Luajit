@@ -94,7 +94,7 @@ func Audit(d *parse.Dump, src string) Cover {
 			if op.Norm(d.Version, in.Op) != op.OpTDUP {
 				continue
 			}
-			k, ok := p.GC(in.D)
+			k, ok := p.GC(p.GCKey(in.D, in.C))
 			if !ok || k.Tab == nil {
 				continue
 			}

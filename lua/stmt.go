@@ -63,7 +63,7 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpTNEW:
 		c.set(a, "{}")
 	case op.OpTDUP:
-		lit := c.dup(in.D)
+		lit := c.dup(in.D, in.C)
 		c.line("local s%d = %s", a, lit)
 		c.set(a, "s"+strconv.Itoa(a))
 	case op.OpGGET:
