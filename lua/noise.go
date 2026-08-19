@@ -16,7 +16,10 @@ func skipIns(d *parse.Dump, p *parse.Proto, in parse.Ins, pc int) bool {
 	if code == op.OpISNES && op.MagicRet(in.A, in.D) {
 		return false
 	}
-	return !legal(d, p, in, code, pc)
+	if !legal(d, p, in, code, pc) {
+		return true
+	}
+	return holeSkip(d, p, in, code, pc)
 }
 
 func legal(d *parse.Dump, p *parse.Proto, in parse.Ins, code byte, pc int) bool {

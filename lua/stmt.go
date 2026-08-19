@@ -69,7 +69,9 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 		c.line("local %s = %s", name, c.get(a))
 		c.set(a, name)
 	case op.OpTNEW:
-		c.set(a, "{}")
+		name := c.localName(a, pc)
+		c.line("local %s = {}", name)
+		c.set(a, name)
 	case op.OpTDUP:
 		lit := c.dup(in.D, in.C)
 		name := c.localName(a, pc)
