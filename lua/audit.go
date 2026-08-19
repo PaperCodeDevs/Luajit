@@ -21,7 +21,10 @@ func countBadOp(src string) int {
 		switch name[1] {
 		case "LOOP", "ILOOP", "JLOOP", "ITERC", "ITERN", "ITERL", "IITERL",
 			"TSETM", "VARG", "BAND", "BOR", "BXOR", "BSHL", "BSHR", "BSAR",
-			"IFUNCV", "FUNCV", "FUNCF", "IFUNCF", "JFUNCF", "JFUNCV", "FUNCC", "FUNCCW", "?":
+			"IFUNCV", "FUNCV", "FUNCF", "IFUNCF", "JFUNCF", "JFUNCV", "FUNCC", "FUNCCW", "?",
+			"ISLT", "ISGE", "ISLE", "ISGT", "ISEQV", "ISNEV", "ISEQS", "ISNES",
+			"ISEQN", "ISNEN", "ISEQP", "ISNEP", "ISTC", "ISFC", "IST", "ISF",
+			"ISTYPE", "ISNUM", "KCDATA", "FORI", "JFORI":
 			n++
 		}
 	}

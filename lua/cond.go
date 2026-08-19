@@ -11,14 +11,33 @@ func (c *gen) tryIf(pc, to int) int {
 		return -1
 	}
 	tgt := c.dest(pc + 1)
-	if tgt <= pc+2 || tgt > to {
+	nins := len(c.p.Ins)
+	if tgt <= pc+2 || tgt > nins {
 		return -1
+	}
+	if tgt > to {
+		return c.clipIf(pc, to)
 	}
 	after := c.emitBranch("if", pc, tgt, to)
 	if after <= pc {
 		return -1
 	}
 	return after - 1
+}
+
+func (c *gen) clipIf(pc, to int) int {
+	c.indent++
+	thenSrc := c.capture(pc+2, to)
+	c.indent--
+	if strings.TrimSpace(thenSrc) == "" {
+		c.mark(pc, to)
+		return to - 1
+	}
+	c.line("if %s then", c.cmp(c.code(c.p.Ins[pc]), c.p.Ins[pc]))
+	c.out.WriteString(thenSrc)
+	c.line("end")
+	c.mark(pc, to)
+	return to - 1
 }
 
 func (c *gen) emitBranch(kw string, pc, tgt, to int) int {

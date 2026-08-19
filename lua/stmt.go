@@ -14,6 +14,9 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.line("return")
 		return
 	}
+	if skipStmt(code) {
+		return
+	}
 	switch code {
 	case op.OpMOV:
 		c.set(a, c.get(int(in.D)))
@@ -118,13 +121,26 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.set(a, "bit.rshift("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
 	case op.OpBSAR:
 		c.set(a, "bit.arshift("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
-	case op.OpJMP, op.OpUCLO, op.OpLOOP, op.OpILOOP, op.OpJLOOP, op.OpFORL, op.OpIFORL, op.OpJFORL, op.OpITERL, op.OpIITERL, op.OpJITERL, op.OpISNEXT, op.OpITERC, op.OpITERN:
 	default:
 		if !op.DumpOK(code) {
 			return
 		}
 		c.line("-- %s %d %d", op.Name(c.d.Version, in.Op), in.A, in.D)
 	}
+}
+
+func skipStmt(code byte) bool {
+	if isCmp(code) {
+		return true
+	}
+	switch code {
+	case op.OpJMP, op.OpUCLO, op.OpLOOP, op.OpILOOP, op.OpJLOOP,
+		op.OpFORL, op.OpIFORL, op.OpJFORL, op.OpITERL, op.OpIITERL, op.OpJITERL,
+		op.OpISNEXT, op.OpITERC, op.OpITERN,
+		op.OpISTYPE, op.OpISNUM, op.OpKCDATA, op.OpFORI, op.OpJFORI:
+		return true
+	}
+	return false
 }
 
 func (c *gen) binop(code byte) string {
