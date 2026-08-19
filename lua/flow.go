@@ -159,9 +159,9 @@ func (c *gen) cmp(code byte, in parse.Ins) string {
 	case op.OpISNEV:
 		return l + " ~= " + r
 	case op.OpISEQS:
-		return l + " == " + c.gcstr(in.D)
+		return l + " == " + c.gcstr(in.D, in.C)
 	case op.OpISNES:
-		return l + " ~= " + c.gcstr(in.D)
+		return l + " ~= " + c.gcstr(in.D, in.C)
 	case op.OpISEQN:
 		return l + " == " + c.numD(in.D)
 	case op.OpISNEN:

@@ -30,6 +30,20 @@ func (k KNum) Float64() float64 {
 	return math.Float64frombits(u)
 }
 
+func (p *Proto) GCKey(d uint16, c byte) uint16 {
+	if int(d) < len(p.KGC) {
+		return d
+	}
+	return uint16(c)
+}
+
+func (p *Proto) UVKey(d uint16, c byte) int {
+	if int(d) < len(p.UV) {
+		return int(d)
+	}
+	return int(c)
+}
+
 func (p *Proto) GC(d uint16) (KGC, bool) {
 	i := len(p.KGC) - 1 - int(d)
 	if i < 0 || i >= len(p.KGC) {
@@ -46,6 +60,10 @@ func (p *Proto) Str(d uint16) string {
 	return k.Str
 }
 
+func (p *Proto) StrC(d uint16, c byte) string {
+	return p.Str(p.GCKey(d, c))
+}
+
 func (p *Proto) Child(d uint16) *Proto {
 	k, ok := p.GC(d)
 	if !ok {
@@ -55,10 +73,7 @@ func (p *Proto) Child(d uint16) *Proto {
 }
 
 func (p *Proto) FNew(d uint16, c byte) *Proto {
-	if int(d) < len(p.KGC) {
-		return p.Child(d)
-	}
-	return p.Child(uint16(c))
+	return p.Child(p.GCKey(d, c))
 }
 
 func (p *Proto) Num(d uint16) (KNum, bool) {

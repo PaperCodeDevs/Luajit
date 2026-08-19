@@ -43,8 +43,12 @@ func disasmProto(b *strings.Builder, d *parse.Dump, p *parse.Proto, depth int) {
 			fmt.Fprintf(b, "%s%04d  %-6s %d => %d\n", pad, pc, name, in.A, pc+1+in.J())
 		} else {
 			extra := ""
-			if code == op.OpKSTR || code == op.OpGGET || code == op.OpGSET || code == op.OpTGETS || code == op.OpTSETS {
-				if s := p.Str(in.D); s != "" {
+			if code == op.OpKSTR || code == op.OpGGET || code == op.OpGSET {
+				if s := p.StrC(in.D, in.C); s != "" {
+					extra = " ; " + quote(s)
+				}
+			} else if code == op.OpTGETS || code == op.OpTSETS {
+				if s := p.Str(uint16(in.C)); s != "" {
 					extra = " ; " + quote(s)
 				}
 			}

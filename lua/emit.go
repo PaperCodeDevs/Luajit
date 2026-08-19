@@ -137,21 +137,23 @@ func (c *gen) set(i int, expr string) {
 	c.slot[i] = expr
 }
 
-func (c *gen) gcstr(d uint16) string {
-	s := c.p.Str(d)
+func (c *gen) gcstr(d uint16, cc byte) string {
+	key := c.p.GCKey(d, cc)
+	s := c.p.Str(key)
 	if s == "" {
-		return "k" + strconv.Itoa(int(d))
+		return "k" + strconv.Itoa(int(key))
 	}
 	return quote(s)
 }
 
-func (c *gen) gcname(d uint16) string {
-	s := c.p.Str(d)
+func (c *gen) gcname(d uint16, cc byte) string {
+	key := c.p.GCKey(d, cc)
+	s := c.p.Str(key)
 	if s != "" && isIdent(s) {
 		return s
 	}
 	if s != "" {
 		return "_G[" + quote(s) + "]"
 	}
-	return "_G[k" + strconv.Itoa(int(d)) + "]"
+	return "_G[k" + strconv.Itoa(int(key)) + "]"
 }

@@ -26,7 +26,7 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpBNOT:
 		c.set(a, "bit.bnot("+c.get(int(in.D))+")")
 	case op.OpKSTR:
-		c.set(a, c.gcstr(in.D))
+		c.set(a, c.gcstr(in.D, in.C))
 	case op.OpKSHORT:
 		c.set(a, shortInt(in.D))
 	case op.OpKNUM:
@@ -38,11 +38,11 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 			c.set(i, "nil")
 		}
 	case op.OpUGET:
-		c.set(a, c.uv(int(in.D)))
+		c.set(a, c.uv(c.p.UVKey(in.D, in.C)))
 	case op.OpUSETV:
 		c.line("%s = %s", c.uv(a), c.get(int(in.D)))
 	case op.OpUSETS:
-		c.line("%s = %s", c.uv(a), c.gcstr(in.D))
+		c.line("%s = %s", c.uv(a), c.gcstr(in.D, in.C))
 	case op.OpUSETN:
 		c.line("%s = %s", c.uv(a), c.numD(in.D))
 	case op.OpUSETP:
@@ -67,9 +67,9 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.line("local s%d = %s", a, lit)
 		c.set(a, "s"+strconv.Itoa(a))
 	case op.OpGGET:
-		c.set(a, c.gcname(in.D))
+		c.set(a, c.gcname(in.D, in.C))
 	case op.OpGSET:
-		c.line("%s = %s", c.gcname(in.D), c.get(a))
+		c.line("%s = %s", c.gcname(in.D, in.C), c.get(a))
 	case op.OpTGETV:
 		c.set(a, c.get(int(in.B))+"["+c.get(int(in.C))+"]")
 	case op.OpTGETS:
