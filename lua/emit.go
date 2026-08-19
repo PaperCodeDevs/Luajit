@@ -123,13 +123,54 @@ func (c *gen) bindParams() {
 }
 
 func (c *gen) localName(slot, pc int) string {
-	if n := c.p.SlotName(slot, pc); okName(n) {
+	return c.freshName(slot, pc, false)
+}
+
+func (c *gen) freshName(slot, pc int, tnew bool) string {
+	cur := c.get(slot)
+	try := func(n string) string {
+		if !okName(n) || n == cur {
+			return ""
+		}
+		if c.nameTaken(n, slot) {
+			return ""
+		}
+		if tnew && !c.varStartsAt(n, pc) {
+			return ""
+		}
 		return n
 	}
-	if n := c.p.SlotName(slot, pc+1); okName(n) {
+	if n := try(c.p.SlotName(slot, pc+1)); n != "" {
+		return n
+	}
+	if n := try(c.p.SlotName(slot, pc)); n != "" {
 		return n
 	}
 	return "s" + strconv.Itoa(slot)
+}
+
+func (c *gen) nameTaken(name string, except int) bool {
+	for i, s := range c.slot {
+		if i != except && s == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *gen) varStartsAt(name string, pc int) bool {
+	if c.p == nil {
+		return false
+	}
+	for _, v := range c.p.Var {
+		if v.Name != name {
+			continue
+		}
+		if int(v.Start) == pc || int(v.Start) == pc+1 {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *gen) line(format string, args ...any) {

@@ -65,16 +65,16 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 		var inner strings.Builder
 		emitFn(&inner, c.d, ch, c.indent, false)
 		c.set(a, strings.TrimSpace(inner.String()))
-		name := c.localName(a, pc)
+		name := c.freshName(a, pc, false)
 		c.line("local %s = %s", name, c.get(a))
 		c.set(a, name)
 	case op.OpTNEW:
-		name := c.localName(a, pc)
+		name := c.freshName(a, pc, true)
 		c.line("local %s = {}", name)
 		c.set(a, name)
 	case op.OpTDUP:
 		lit := c.dup(in.D, in.C)
-		name := c.localName(a, pc)
+		name := c.freshName(a, pc, false)
 		c.line("local %s = %s", name, lit)
 		c.set(a, name)
 	case op.OpGGET:
@@ -106,7 +106,12 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 		if !ok {
 			return
 		}
-		c.line("%s = %s", c.idx(c.get(int(in.B)), s), c.get(a))
+		obj := c.get(int(in.B))
+		val := c.get(a)
+		if val == obj && a != int(in.B) {
+			val = "s" + strconv.Itoa(a)
+		}
+		c.line("%s = %s", c.idx(obj, s), val)
 	case op.OpTSETB:
 		c.line("%s[%d] = %s", c.get(int(in.B)), in.C, c.get(a))
 	case op.OpTSETR:

@@ -56,6 +56,9 @@ func holeSkip(d *parse.Dump, p *parse.Proto, in parse.Ins, code byte, pc int) bo
 	if code == op.OpCALL && in.B == 1 && sslDataCall(d, p, pc, int(in.A)) {
 		return true
 	}
+	if code == op.OpCALL && sslInvokeGetInst(d, p, pc, int(in.A)) {
+		return true
+	}
 	return false
 }
 
@@ -86,6 +89,69 @@ func sslDataCall(d *parse.Dump, p *parse.Proto, callPC, fn int) bool {
 		}
 	}
 	return sawTGETS && sawData
+}
+
+// sslInvokeGetInst drops CALL that invokes GetInst's object as a function
+// because the method TGETS was the skipped ASCII data hole (SSL init CALL@16
+// narg=3: local s2 = s2('MiniUIManager', ...)). Last KEEP write to the fn slot
+// is the GetInst CALL result; a skipped TGETS or 64 61 74 61 sits between.
+// Real 3-arg GetInst (last KEEP is GGET) is kept. Does not invent GetMVC/InstMVC.
+func sslInvokeGetInst(d *parse.Dump, p *parse.Proto, callPC, fn int) bool {
+	if callPC <= 0 || p == nil || d == nil {
+		return false
+	}
+	sawSkip := false
+	for i := callPC - 1; i >= 0; i-- {
+		in := p.Ins[i]
+		code := op.Norm(d.Version, in.Op)
+		if legal(d, p, in, code, i) {
+			if !slotWritten(in, code, fn) {
+				continue
+			}
+			if code != op.OpCALL && code != op.OpCALLM {
+				return false
+			}
+			if !getInstCall(d, p, i, fn) {
+				return false
+			}
+			return sawSkip
+		}
+		if in.Op == 0x64 && in.A == 0x61 && in.C == 0x74 && in.B == 0x61 {
+			sawSkip = true
+			continue
+		}
+		if code == op.OpTGETS && int(in.A) == fn {
+			sawSkip = true
+			continue
+		}
+	}
+	return false
+}
+
+func slotWritten(in parse.Ins, code byte, fn int) bool {
+	if fn < 0 {
+		return false
+	}
+	wrote := make([]byte, fn+8)
+	markWrite(wrote, in, code)
+	return fn < len(wrote) && wrote[fn] != 0
+}
+
+func getInstCall(d *parse.Dump, p *parse.Proto, callPC, fn int) bool {
+	for i := callPC - 1; i >= 0 && i >= callPC-6; i-- {
+		in := p.Ins[i]
+		code := op.Norm(d.Version, in.Op)
+		if !legal(d, p, in, code, i) {
+			continue
+		}
+		if code == op.OpGGET && int(in.A) == fn {
+			return p.Str(p.GCKey(in.D, in.C)) == "GetInst"
+		}
+		if slotWritten(in, code, fn) {
+			return false
+		}
+	}
+	return false
 }
 
 func markWrite(wrote []byte, in parse.Ins, code byte) {
