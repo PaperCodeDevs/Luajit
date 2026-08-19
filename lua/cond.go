@@ -1,6 +1,8 @@
 package lua
 
 import (
+	"strings"
+
 	"github.com/PaperCodeDevs/Luajit/op"
 )
 
@@ -23,13 +25,18 @@ func (c *gen) emitBranch(kw string, pc, tgt, to int) int {
 	in := c.p.Ins[pc]
 	cond := c.cmp(c.code(in), in)
 	thenEnd, after := c.thenJoin(pc, tgt, to)
-	c.line("%s %s then", kw, cond)
 	c.indent++
-	c.body(pc+2, thenEnd)
+	thenSrc := c.capture(pc+2, thenEnd)
 	c.indent--
+	if after <= tgt && strings.TrimSpace(thenSrc) == "" && kw == "if" {
+		c.mark(pc, after)
+		return after
+	}
+	c.line("%s %s then", kw, cond)
+	c.out.WriteString(thenSrc)
 	if after > tgt {
 		elsePC := c.skipNoise(tgt, after)
-		if elsePC+1 < after && isCmp(c.opAt(elsePC)) && c.opAt(elsePC+1) == op.OpJMP {
+		if elsePC+1 < after && isCmp(c.opAt(elsePC)) && c.opAt(elsePC+1) == op.OpJMP && !logicJump(c.d, c.p, elsePC) {
 			etgt := c.dest(elsePC + 1)
 			if etgt > elsePC+2 && etgt <= after && !c.whileHead(elsePC, etgt, after) {
 				end := c.emitBranch("elseif", elsePC, etgt, after)
@@ -63,12 +70,32 @@ func (c *gen) thenJoin(pc, tgt, to int) (int, int) {
 	}
 	dest := c.dest(last)
 	if dest > tgt && dest <= to {
+		if c.jumpPastOuter(pc, dest) {
+			return tgt, tgt
+		}
 		return last, dest
 	}
 	if dest > to && c.loopExit(pc, dest) {
 		return last, to
 	}
 	return tgt, tgt
+}
+
+func (c *gen) jumpPastOuter(pc, dest int) bool {
+	n := len(c.p.Ins)
+	for e := 0; e+1 < pc; e++ {
+		if !isCmp(c.opAt(e)) || c.opAt(e+1) != op.OpJMP {
+			continue
+		}
+		te := c.dest(e + 1)
+		if te <= e+2 || te > n {
+			continue
+		}
+		if pc > e+1 && pc < te && dest > te {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *gen) loopExit(pc, dest int) bool {

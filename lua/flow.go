@@ -52,11 +52,19 @@ func (c *gen) body(from, to int) {
 			pc = n
 			continue
 		}
+		if n := c.tryAndOr(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
 		if n := c.tryIf(pc, to); n >= 0 {
 			pc = n
 			continue
 		}
 		if n := c.tryForNum(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
+		if n := c.tryUclo(pc); n >= 0 {
 			pc = n
 			continue
 		}

@@ -22,22 +22,25 @@ type Cover struct {
 	MissFn    int
 	NeedColon int
 	MissColon int
+	NeedLogic int
+	MissLogic int
 	Miss      []string
 }
 
 func (c Cover) Ok() bool {
-	return c.MissElse == 0 && c.MissLoop == 0 && c.MissForIn == 0 && c.MissTab == 0 && c.BadOp == 0 && c.MissFn == 0 && c.MissColon == 0
+	return c.MissElse == 0 && c.MissLoop == 0 && c.MissForIn == 0 && c.MissTab == 0 && c.BadOp == 0 && c.MissFn == 0 && c.MissColon == 0 && c.MissLogic == 0
 }
 
 func (c Cover) String() string {
-	return fmt.Sprintf("else %d/%d loop %d/%d forin %d/%d tab %d/%d badop=%d fn %d/%d colon %d/%d",
+	return fmt.Sprintf("else %d/%d loop %d/%d forin %d/%d tab %d/%d badop=%d fn %d/%d colon %d/%d logic %d/%d",
 		c.NeedElse-c.MissElse, c.NeedElse,
 		c.NeedLoop-c.MissLoop, c.NeedLoop,
 		c.NeedForIn-c.MissForIn, c.NeedForIn,
 		c.NeedTab-c.MissTab, c.NeedTab,
 		c.BadOp,
 		c.NeedFn-c.MissFn, c.NeedFn,
-		c.NeedColon-c.MissColon, c.NeedColon)
+		c.NeedColon-c.MissColon, c.NeedColon,
+		c.NeedLogic-c.MissLogic, c.NeedLogic)
 }
 
 func Audit(d *parse.Dump, src string) Cover {
@@ -50,6 +53,7 @@ func Audit(d *parse.Dump, src string) Cover {
 	hasForIn := strings.Contains(src, " for ") || strings.HasPrefix(strings.TrimSpace(src), "for ") || strings.Contains(src, "\nfor ")
 	hasIn := strings.Contains(src, " in ")
 	hasColon := hasMethodColon(src)
+	hasLogic := strings.Contains(src, " and ") || strings.Contains(src, " or ")
 	walkProto(d.Main, func(p *parse.Proto) {
 		if protoHasElse(d, p) {
 			cov.NeedElse++
@@ -77,6 +81,13 @@ func Audit(d *parse.Dump, src string) Cover {
 			if !hasColon {
 				cov.MissColon++
 				cov.note("colon")
+			}
+		}
+		if protoHasLogic(d, p) {
+			cov.NeedLogic++
+			if !hasLogic {
+				cov.MissLogic++
+				cov.note("logic")
 			}
 		}
 		for _, in := range p.Ins {
@@ -144,6 +155,9 @@ func protoHasElse(d *parse.Dump, p *parse.Proto) bool {
 		if !isCmp(op.Norm(d.Version, p.Ins[pc].Op)) {
 			continue
 		}
+		if logicJump(d, p, pc) {
+			continue
+		}
 		if op.Norm(d.Version, p.Ins[pc+1].Op) != op.OpJMP {
 			continue
 		}
@@ -168,7 +182,7 @@ func protoHasElse(d *parse.Dump, p *parse.Proto) bool {
 			continue
 		}
 		after := last + 1 + p.Ins[last].J()
-		if after > tgt && after <= n && !elseSpill(d, p, pc, tgt) {
+		if after > tgt && after <= n && !elseSpill(d, p, pc, after) {
 			return true
 		}
 	}
