@@ -1,0 +1,160 @@
+package op
+
+const (
+	OpISLT = 0
+	OpISGE = 1
+	OpISLE = 2
+	OpISGT = 3
+	OpISEQV = 4
+	OpISNEV = 5
+	OpISEQS = 6
+	OpISNES = 7
+	OpISEQN = 8
+	OpISNEN = 9
+	OpISEQP = 10
+	OpISNEP = 11
+	OpISTC = 12
+	OpISFC = 13
+	OpIST = 14
+	OpISF = 15
+	OpISTYPE = 16
+	OpISNUM = 17
+	OpMOV = 18
+	OpNOT = 19
+	OpUNM = 20
+	OpLEN = 21
+	OpADDVN = 22
+	OpSUBVN = 23
+	OpMULVN = 24
+	OpDIVVN = 25
+	OpMODVN = 26
+	OpADDNV = 27
+	OpSUBNV = 28
+	OpMULNV = 29
+	OpDIVNV = 30
+	OpMODNV = 31
+	OpADDVV = 32
+	OpSUBVV = 33
+	OpMULVV = 34
+	OpDIVVV = 35
+	OpMODVV = 36
+	OpPOW = 37
+	OpCAT = 38
+	OpKSTR = 39
+	OpKCDATA = 40
+	OpKSHORT = 41
+	OpKNUM = 42
+	OpKPRI = 43
+	OpKNIL = 44
+	OpUGET = 45
+	OpUSETV = 46
+	OpUSETS = 47
+	OpUSETN = 48
+	OpUSETP = 49
+	OpUCLO = 50
+	OpFNEW = 51
+	OpTNEW = 52
+	OpTDUP = 53
+	OpGGET = 54
+	OpGSET = 55
+	OpTGETV = 56
+	OpTGETS = 57
+	OpTGETB = 58
+	OpTGETR = 59
+	OpTSETV = 60
+	OpTSETS = 61
+	OpTSETB = 62
+	OpTSETM = 63
+	OpTSETR = 64
+	OpCALLM = 65
+	OpCALL = 66
+	OpCALLMT = 67
+	OpCALLT = 68
+	OpITERC = 69
+	OpITERN = 70
+	OpVARG = 71
+	OpISNEXT = 72
+	OpRETM = 73
+	OpRET = 74
+	OpRET0 = 75
+	OpRET1 = 76
+	OpFORI = 77
+	OpJFORI = 78
+	OpFORL = 79
+	OpIFORL = 80
+	OpJFORL = 81
+	OpITERL = 82
+	OpIITERL = 83
+	OpJITERL = 84
+	OpLOOP = 85
+	OpILOOP = 86
+	OpJLOOP = 87
+	OpJMP = 88
+	OpBNOT = 89
+	OpBAND = 90
+	OpBOR = 91
+	OpBXOR = 92
+	OpBSHL = 93
+	OpBSHR = 94
+	OpBSAR = 95
+	OpFUNCF = 96
+	OpIFUNCF = 97
+	OpJFUNCF = 98
+	OpFUNCV = 99
+	OpIFUNCV = 100
+	OpJFUNCV = 101
+	OpFUNCC = 102
+	OpFUNCCW = 103
+	OpMax = 104
+)
+
+const (
+	fmtAD = 0
+	fmtABC = 1
+)
+
+var opName = [OpMax]string{
+	"ISLT", "ISGE", "ISLE", "ISGT",
+	"ISEQV", "ISNEV", "ISEQS", "ISNES", "ISEQN", "ISNEN", "ISEQP", "ISNEP",
+	"ISTC", "ISFC", "IST", "ISF", "ISTYPE", "ISNUM",
+	"MOV", "NOT", "UNM", "LEN",
+	"ADDVN", "SUBVN", "MULVN", "DIVVN", "MODVN",
+	"ADDNV", "SUBNV", "MULNV", "DIVNV", "MODNV",
+	"ADDVV", "SUBVV", "MULVV", "DIVVV", "MODVV",
+	"POW", "CAT",
+	"KSTR", "KCDATA", "KSHORT", "KNUM", "KPRI", "KNIL",
+	"UGET", "USETV", "USETS", "USETN", "USETP", "UCLO", "FNEW",
+	"TNEW", "TDUP", "GGET", "GSET", "TGETV", "TGETS", "TGETB", "TGETR",
+	"TSETV", "TSETS", "TSETB", "TSETM", "TSETR",
+	"CALLM", "CALL", "CALLMT", "CALLT", "ITERC", "ITERN", "VARG", "ISNEXT",
+	"RETM", "RET", "RET0", "RET1",
+	"FORI", "JFORI",
+	"FORL", "IFORL", "JFORL",
+	"ITERL", "IITERL", "JITERL",
+	"LOOP", "ILOOP", "JLOOP",
+	"JMP",
+	"BNOT", "BAND", "BOR", "BXOR", "BSHL", "BSHR", "BSAR",
+	"FUNCF", "IFUNCF", "JFUNCF", "FUNCV", "IFUNCV", "JFUNCV", "FUNCC", "FUNCCW",
+}
+
+func ABC(code byte) bool {
+	switch code {
+	case OpADDVN, OpSUBVN, OpMULVN, OpDIVVN, OpMODVN,
+		OpADDNV, OpSUBNV, OpMULNV, OpDIVNV, OpMODNV,
+		OpADDVV, OpSUBVV, OpMULVV, OpDIVVV, OpMODVV,
+		OpPOW, OpCAT,
+		OpTGETV, OpTGETS, OpTGETB, OpTGETR,
+		OpTSETV, OpTSETS, OpTSETB, OpTSETR,
+		OpCALLM, OpCALL, OpITERC, OpITERN, OpVARG,
+		OpBAND, OpBOR, OpBXOR, OpBSHL, OpBSHR, OpBSAR:
+		return true
+	}
+	return false
+}
+
+func NameOf(code byte) string {
+	if int(code) >= OpMax {
+		return "?"
+	}
+	return opName[code]
+}
