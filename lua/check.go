@@ -20,21 +20,24 @@ type Cover struct {
 	BadOp     int
 	NeedFn    int
 	MissFn    int
+	NeedColon int
+	MissColon int
 	Miss      []string
 }
 
 func (c Cover) Ok() bool {
-	return c.MissElse == 0 && c.MissLoop == 0 && c.MissForIn == 0 && c.MissTab == 0 && c.BadOp == 0 && c.MissFn == 0
+	return c.MissElse == 0 && c.MissLoop == 0 && c.MissForIn == 0 && c.MissTab == 0 && c.BadOp == 0 && c.MissFn == 0 && c.MissColon == 0
 }
 
 func (c Cover) String() string {
-	return fmt.Sprintf("else %d/%d loop %d/%d forin %d/%d tab %d/%d badop=%d fn %d/%d",
+	return fmt.Sprintf("else %d/%d loop %d/%d forin %d/%d tab %d/%d badop=%d fn %d/%d colon %d/%d",
 		c.NeedElse-c.MissElse, c.NeedElse,
 		c.NeedLoop-c.MissLoop, c.NeedLoop,
 		c.NeedForIn-c.MissForIn, c.NeedForIn,
 		c.NeedTab-c.MissTab, c.NeedTab,
 		c.BadOp,
-		c.NeedFn-c.MissFn, c.NeedFn)
+		c.NeedFn-c.MissFn, c.NeedFn,
+		c.NeedColon-c.MissColon, c.NeedColon)
 }
 
 func Audit(d *parse.Dump, src string) Cover {
@@ -46,6 +49,7 @@ func Audit(d *parse.Dump, src string) Cover {
 	hasLoop := lineHas(src, "repeat") || strings.Contains(src, "while ")
 	hasForIn := strings.Contains(src, " for ") || strings.HasPrefix(strings.TrimSpace(src), "for ") || strings.Contains(src, "\nfor ")
 	hasIn := strings.Contains(src, " in ")
+	hasColon := hasMethodColon(src)
 	walkProto(d.Main, func(p *parse.Proto) {
 		if protoHasElse(d, p) {
 			cov.NeedElse++
@@ -66,6 +70,13 @@ func Audit(d *parse.Dump, src string) Cover {
 			if !hasForIn || !hasIn {
 				cov.MissForIn++
 				cov.note("forin")
+			}
+		}
+		if protoHasMethod(d, p) {
+			cov.NeedColon++
+			if !hasColon {
+				cov.MissColon++
+				cov.note("colon")
 			}
 		}
 		for _, in := range p.Ins {

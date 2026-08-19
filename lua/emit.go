@@ -62,7 +62,7 @@ func emitFn(b *strings.Builder, d *parse.Dump, p *parse.Proto, indent int, top b
 		c.slot[i] = "s" + strconv.Itoa(i)
 	}
 	for i := 0; i < int(p.Params); i++ {
-		c.set(i+c.fr2, "a"+strconv.Itoa(i))
+		c.set(i, "a"+strconv.Itoa(i))
 	}
 	if !top {
 		c.line("function(%s)", strings.Join(c.params(), ", "))

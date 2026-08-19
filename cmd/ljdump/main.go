@@ -110,6 +110,8 @@ func runScan(blob []byte, outDir string) {
 			cov.BadOp += cv.BadOp
 			cov.NeedFn += cv.NeedFn
 			cov.MissFn += cv.MissFn
+			cov.NeedColon += cv.NeedColon
+			cov.MissColon += cv.MissColon
 			if !cv.Ok() && len(cov.Miss) < 20 {
 				name := h.Name
 				if name == "" {
