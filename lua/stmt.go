@@ -84,7 +84,11 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 	case op.OpTGETV:
 		c.set(a, c.get(int(in.B))+"["+c.get(int(in.C))+"]")
 	case op.OpTGETS:
-		c.set(a, c.idx(c.get(int(in.B)), c.p.Str(uint16(in.C))))
+		s, ok := c.p.StrOK(uint16(in.C))
+		if !ok {
+			return
+		}
+		c.set(a, c.idx(c.get(int(in.B)), s))
 	case op.OpTGETB:
 		c.set(a, c.get(int(in.B))+"["+strconv.Itoa(int(in.C))+"]")
 	case op.OpTGETR:
@@ -92,7 +96,11 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 	case op.OpTSETV:
 		c.line("%s[%s] = %s", c.get(int(in.B)), c.get(int(in.C)), c.get(a))
 	case op.OpTSETS:
-		c.line("%s = %s", c.idx(c.get(int(in.B)), c.p.Str(uint16(in.C))), c.get(a))
+		s, ok := c.p.StrOK(uint16(in.C))
+		if !ok {
+			return
+		}
+		c.line("%s = %s", c.idx(c.get(int(in.B)), s), c.get(a))
 	case op.OpTSETB:
 		c.line("%s[%d] = %s", c.get(int(in.B)), in.C, c.get(a))
 	case op.OpTSETR:
@@ -174,9 +182,6 @@ func (c *gen) binop(code byte) string {
 func (c *gen) idx(obj, field string) string {
 	if isIdent(field) {
 		return obj + "." + field
-	}
-	if field == "" {
-		return obj + "[?]"
 	}
 	return obj + "[" + quote(field) + "]"
 }

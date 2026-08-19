@@ -53,11 +53,16 @@ func (p *Proto) GC(d uint16) (KGC, bool) {
 }
 
 func (p *Proto) Str(d uint16) string {
+	s, _ := p.StrOK(d)
+	return s
+}
+
+func (p *Proto) StrOK(d uint16) (string, bool) {
 	k, ok := p.GC(d)
 	if !ok || k.Kind != KStr {
-		return ""
+		return "", false
 	}
-	return k.Str
+	return k.Str, true
 }
 
 func (p *Proto) StrC(d uint16, c byte) string {
