@@ -7,6 +7,8 @@ import (
 
 // holeSkip drops TSETB/TSETM/TSETV/CALL that index or call a slot never written
 // by a kept instruction. Params start live. Does not invent object slots.
+// Also drops statement CALL after the SSL ASCII hole: skipped TGETS B>=frame
+// (32 02 01 15) plus skipped 64 61 74 61 "data".
 func holeSkip(d *parse.Dump, p *parse.Proto, in parse.Ins, code byte, pc int) bool {
 	switch code {
 	case op.OpTSETB, op.OpTSETV, op.OpTSETM, op.OpCALL, op.OpCALLM, op.OpCALLT, op.OpCALLMT:
@@ -48,7 +50,42 @@ func holeSkip(d *parse.Dump, p *parse.Proto, in parse.Ins, code byte, pc int) bo
 	if obj < 0 || obj >= fr {
 		return true
 	}
-	return wrote[obj] == 0
+	if wrote[obj] == 0 {
+		return true
+	}
+	if code == op.OpCALL && in.B == 1 && sslDataCall(d, p, pc, int(in.A)) {
+		return true
+	}
+	return false
+}
+
+// sslDataCall is the SSLBuyGiftUIAutoGen extra s2('MiniUIManager'): immediately
+// before the CALL, skipped ins are TGETS A=fn B>=frame (raw 32 02 01 15) and
+// ASCII data (64 61 74 61). Fn slot already holds GetInst's result.
+func sslDataCall(d *parse.Dump, p *parse.Proto, callPC, fn int) bool {
+	if callPC <= 0 || p == nil {
+		return false
+	}
+	sawTGETS, sawData := false, false
+	for i := callPC - 1; i >= 0 && i >= callPC-4; i-- {
+		in := p.Ins[i]
+		code := op.Norm(d.Version, in.Op)
+		if legal(d, p, in, code, i) {
+			break
+		}
+		if in.Op == 0x64 && in.A == 0x61 && in.C == 0x74 && in.B == 0x61 {
+			sawData = true
+			continue
+		}
+		if code == op.OpTGETS && int(in.A) == fn && int(in.B) >= int(p.Frame) {
+			sawTGETS = true
+			continue
+		}
+		if in.Op == 0x73 && in.A == 0 && int(in.B) == fn {
+			continue
+		}
+	}
+	return sawTGETS && sawData
 }
 
 func markWrite(wrote []byte, in parse.Ins, code byte) {
