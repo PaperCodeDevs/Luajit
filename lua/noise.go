@@ -95,6 +95,7 @@ func legal(d *parse.Dump, p *parse.Proto, in parse.Ins, code byte, pc int) bool 
 	case op.OpTGETV, op.OpTSETV, op.OpTGETR, op.OpTSETR:
 		return inFr(a) && inFr(b) && inFr(c)
 	case op.OpTGETS, op.OpTSETS:
+		// B>=frame is payload, not an index: pack FNEW+TSETS B-fail=176, B==FNEW.A=0 (SSMgrBase Instance 36 01 07 05 B=5 FA=1). Fake 36 14 0e 61 B=97 stays skipped.
 		_, ok := p.StrOK(uint16(in.C))
 		return inFr(a) && inFr(b) && ok
 	case op.OpTGETB, op.OpTSETB:
