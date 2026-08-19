@@ -9,6 +9,7 @@ type Dump = parse.Dump
 type Proto = parse.Proto
 type Batch = lua.Batch
 type Hit = parse.Hit
+type Cover = lua.Cover
 
 func Parse(raw []byte) (*Dump, error) {
 	return parse.Parse(raw)
@@ -44,6 +45,10 @@ func Lua(d *Dump) string {
 
 func Disassemble(d *Dump) string {
 	return lua.List(d)
+}
+
+func Audit(d *Dump, src string) Cover {
+	return lua.Audit(d, src)
 }
 
 func RunDir(inDir, outDir string) (Batch, error) {

@@ -53,6 +53,7 @@ func emitFn(b *strings.Builder, d *parse.Dump, p *parse.Proto, indent int, top b
 		slot:   make([]string, need),
 		indent: indent,
 		out:    b,
+		used:   map[*parse.Proto]bool{},
 	}
 	if d.Flags&parse.FlagFR2 != 0 {
 		c.fr2 = 1
@@ -68,6 +69,7 @@ func emitFn(b *strings.Builder, d *parse.Dump, p *parse.Proto, indent int, top b
 		c.indent++
 	}
 	c.body(0, len(p.Ins))
+	c.emitUnused()
 	if !top {
 		c.indent--
 		c.line("end")
@@ -82,6 +84,21 @@ type gen struct {
 	fr2    int
 	out    *strings.Builder
 	skip   map[int]bool
+	used   map[*parse.Proto]bool
+}
+
+func (c *gen) emitUnused() {
+	if c.used == nil {
+		c.used = map[*parse.Proto]bool{}
+	}
+	for i, k := range c.p.KGC {
+		if k.Kind != parse.KChild || k.Child == nil || c.used[k.Child] {
+			continue
+		}
+		var inner strings.Builder
+		emitFn(&inner, c.d, k.Child, c.indent, false)
+		c.line("local _c%d = %s", i, strings.TrimSpace(inner.String()))
+	}
 }
 
 func (c *gen) params() []string {

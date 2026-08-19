@@ -11,8 +11,8 @@ github.com/PaperCodeDevs/Luajit
 luajit.go          对外 API
 parse/             dump 头、proto、kgc/knum、扫描
 op/                标准 opcode 名 + 迷你世界编号对照
-lua/               反汇编 / 反编译 / 批量
-cmd/ljdump         进程入口
+lua/               反汇编 / 反编译（if-else、while/repeat、泛型 for、TDUP）/ 覆盖检查
+cmd/ljdump         进程入口；扫 blob 时覆盖率不满则 exit 1
 ```
 
 ```text

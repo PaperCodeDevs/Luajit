@@ -45,6 +45,12 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.line("%s = %s", c.uv(a), pri(in.D))
 	case op.OpFNEW:
 		ch := c.p.Child(in.D)
+		if ch != nil {
+			if c.used == nil {
+				c.used = map[*parse.Proto]bool{}
+			}
+			c.used[ch] = true
+		}
 		var inner strings.Builder
 		emitFn(&inner, c.d, ch, c.indent, false)
 		c.set(a, strings.TrimSpace(inner.String()))
@@ -53,7 +59,9 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpTNEW:
 		c.set(a, "{}")
 	case op.OpTDUP:
-		c.set(a, c.dup(in.D))
+		lit := c.dup(in.D)
+		c.line("local s%d = %s", a, lit)
+		c.set(a, "s"+strconv.Itoa(a))
 	case op.OpGGET:
 		c.set(a, c.gcname(in.D))
 	case op.OpGSET:
@@ -74,6 +82,8 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.line("%s[%d] = %s", c.get(int(in.B)), in.C, c.get(a))
 	case op.OpTSETR:
 		c.line("%s[%s] = %s", c.get(int(in.B)), c.get(int(in.C)), c.get(a))
+	case op.OpTSETM:
+		c.tsetm(in)
 	case op.OpADDVV, op.OpSUBVV, op.OpMULVV, op.OpDIVVV, op.OpMODVV, op.OpPOW:
 		c.set(a, "("+c.get(int(in.B))+c.binop(code)+c.get(int(in.C))+")")
 	case op.OpADDVN, op.OpSUBVN, op.OpMULVN, op.OpDIVVN, op.OpMODVN:
@@ -88,7 +98,23 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		c.call(in, code, true)
 	case op.OpRET, op.OpRETM, op.OpRET0, op.OpRET1:
 		c.ret(in, code)
-	case op.OpJMP, op.OpUCLO, op.OpLOOP, op.OpILOOP, op.OpJLOOP, op.OpFORL, op.OpIFORL, op.OpJFORL, op.OpITERL, op.OpISNEXT, op.OpITERC, op.OpITERN, op.OpVARG:
+	case op.OpVARG:
+		c.set(a, "...")
+		c.line("local s%d = ...", a)
+		c.set(a, "s"+strconv.Itoa(a))
+	case op.OpBAND:
+		c.set(a, "bit.band("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
+	case op.OpBOR:
+		c.set(a, "bit.bor("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
+	case op.OpBXOR:
+		c.set(a, "bit.bxor("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
+	case op.OpBSHL:
+		c.set(a, "bit.lshift("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
+	case op.OpBSHR:
+		c.set(a, "bit.rshift("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
+	case op.OpBSAR:
+		c.set(a, "bit.arshift("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
+	case op.OpJMP, op.OpUCLO, op.OpLOOP, op.OpILOOP, op.OpJLOOP, op.OpFORL, op.OpIFORL, op.OpJFORL, op.OpITERL, op.OpIITERL, op.OpJITERL, op.OpISNEXT, op.OpITERC, op.OpITERN:
 	default:
 		c.line("-- %s %d %d", op.Name(c.d.Version, in.Op), in.A, in.D)
 	}
@@ -139,14 +165,6 @@ func (c *gen) uv(i int) string {
 		return c.p.UVName[i]
 	}
 	return "u" + strconv.Itoa(i)
-}
-
-func (c *gen) dup(d uint16) string {
-	k, ok := c.p.GC(d)
-	if !ok || k.Tab == nil {
-		return "{}"
-	}
-	return "{}"
 }
 
 func (c *gen) call(in parse.Ins, code byte, tail bool) {

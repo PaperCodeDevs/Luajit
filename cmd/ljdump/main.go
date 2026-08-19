@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/PaperCodeDevs/Luajit"
 )
@@ -75,6 +76,7 @@ func main() {
 func runScan(blob []byte, outDir string) {
 	hits := luajit.Scan(blob)
 	ok, fail, luaOK, luaFail := 0, 0, 0, 0
+	var cov luajit.Cover
 	for i, h := range hits {
 		if h.Err != nil {
 			fail++
@@ -94,6 +96,26 @@ func runScan(blob []byte, outDir string) {
 			continue
 		}
 		luaOK++
+		d, err := luajit.Parse(chunk)
+		if err == nil {
+			cv := luajit.Audit(d, string(src))
+			cov.NeedElse += cv.NeedElse
+			cov.MissElse += cv.MissElse
+			cov.NeedLoop += cv.NeedLoop
+			cov.MissLoop += cv.MissLoop
+			cov.NeedForIn += cv.NeedForIn
+			cov.MissForIn += cv.MissForIn
+			cov.NeedTab += cv.NeedTab
+			cov.MissTab += cv.MissTab
+			cov.BadOp += cv.BadOp
+			if !cv.Ok() && len(cov.Miss) < 20 {
+				name := h.Name
+				if name == "" {
+					name = fmt.Sprintf("off=%d", h.Off)
+				}
+				cov.Miss = append(cov.Miss, name+": "+strings.Join(cv.Miss, ","))
+			}
+		}
 		if outDir == "" {
 			continue
 		}
@@ -112,7 +134,11 @@ func runScan(blob []byte, outDir string) {
 		}
 	}
 	fmt.Printf("scan hits=%d parse ok=%d fail=%d lua ok=%d fail=%d\n", len(hits), ok, fail, luaOK, luaFail)
-	if ok == 0 {
+	fmt.Println(cov.String())
+	for _, m := range cov.Miss {
+		fmt.Fprintln(os.Stderr, m)
+	}
+	if ok == 0 || luaFail > 0 || !cov.Ok() {
 		os.Exit(1)
 	}
 }

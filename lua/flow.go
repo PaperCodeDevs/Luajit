@@ -2,6 +2,7 @@ package lua
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/PaperCodeDevs/Luajit/op"
 	"github.com/PaperCodeDevs/Luajit/parse"
@@ -36,49 +37,102 @@ func (c *gen) body(from, to int) {
 		if c.skip[pc] {
 			continue
 		}
-		if pc >= len(c.p.Ins) {
+		if pc >= nins {
 			return
 		}
+		if n := c.tryWhile(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
+		if n := c.tryLoop(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
+		if n := c.tryForIn(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
+		if n := c.tryIf(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
+		if n := c.tryForNum(pc, to); n >= 0 {
+			pc = n
+			continue
+		}
 		in := c.p.Ins[pc]
-		code := c.code(in)
-		if isCmp(code) && pc+1 < to && pc+1 < len(c.p.Ins) && c.code(c.p.Ins[pc+1]) == op.OpJMP {
-			tgt := pc + 2 + c.p.Ins[pc+1].J()
-			if tgt > pc+2 && tgt <= len(c.p.Ins) && tgt <= to {
-				cond := c.cmp(code, in)
-				c.line("if %s then", cond)
-				c.indent++
-				c.body(pc+2, tgt)
-				c.indent--
-				c.line("end")
-				for i := pc; i < tgt; i++ {
-					c.skip[i] = true
-				}
-				pc = tgt - 1
-				continue
-			}
-		}
-		if code == op.OpFORI {
-			lim := pc + 1 + in.J()
-			if lim > pc+1 && lim <= len(c.p.Ins) && lim <= to {
-				idx := c.get(int(in.A) + 3)
-				c.line("for %s = %s, %s, %s do", idx, c.get(int(in.A)), c.get(int(in.A)+1), c.get(int(in.A)+2))
-				c.indent++
-				c.body(pc+1, lim)
-				c.indent--
-				c.line("end")
-				for i := pc; i < lim; i++ {
-					c.skip[i] = true
-				}
-				pc = lim - 1
-				continue
-			}
-		}
-		c.stmt(in, code)
+		c.stmt(in, c.code(in))
 	}
+}
+
+func (c *gen) opAt(pc int) byte {
+	if pc < 0 || pc >= len(c.p.Ins) {
+		return 255
+	}
+	return c.code(c.p.Ins[pc])
+}
+
+func (c *gen) dest(pc int) int {
+	if pc < 0 || pc >= len(c.p.Ins) {
+		return pc
+	}
+	return pc + 1 + c.p.Ins[pc].J()
+}
+
+func (c *gen) mark(from, to int) {
+	if to > len(c.p.Ins) {
+		to = len(c.p.Ins)
+	}
+	for i := from; i < to; i++ {
+		c.skip[i] = true
+	}
+}
+
+func (c *gen) skipNoise(pc, lim int) int {
+	for pc < lim && pc < len(c.p.Ins) {
+		if c.opAt(pc) == op.OpUCLO {
+			pc++
+			continue
+		}
+		return pc
+	}
+	return pc
+}
+
+func isLoop(code byte) bool {
+	return code == op.OpLOOP || code == op.OpILOOP || code == op.OpJLOOP
+}
+
+func isIterL(code byte) bool {
+	return code == op.OpITERL || code == op.OpIITERL || code == op.OpJITERL
+}
+
+func isIter(code byte) bool {
+	return code == op.OpITERC || code == op.OpITERN
 }
 
 func isCmp(code byte) bool {
 	return code <= op.OpISNEP || code == op.OpIST || code == op.OpISF || code == op.OpISTC || code == op.OpISFC
+}
+
+func invert(s string) string {
+	if strings.HasPrefix(s, "not ") && !strings.Contains(s[4:], " ") {
+		return s[4:]
+	}
+	pairs := [][2]string{
+		{" >= ", " < "},
+		{" <= ", " > "},
+		{" ~= ", " == "},
+		{" == ", " ~= "},
+		{" > ", " <= "},
+		{" < ", " >= "},
+	}
+	for _, p := range pairs {
+		if strings.Count(s, p[0]) == 1 {
+			return strings.Replace(s, p[0], p[1], 1)
+		}
+	}
+	return "not (" + s + ")"
 }
 
 func (c *gen) cmp(code byte, in parse.Ins) string {
