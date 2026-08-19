@@ -1,14 +1,13 @@
 package lua
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/PaperCodeDevs/Luajit/op"
 	"github.com/PaperCodeDevs/Luajit/parse"
 )
 
-func (c *gen) call(in parse.Ins, code byte, tail bool) {
+func (c *gen) call(in parse.Ins, code byte, tail bool, pc int) {
 	base := int(in.A)
 	fn := c.get(base)
 	narg := int(in.C) - 1
@@ -41,9 +40,9 @@ func (c *gen) call(in parse.Ins, code byte, tail bool) {
 		return
 	}
 	if nres == 1 {
-		c.set(base, call)
-		c.line("local s%d = %s", base, call)
-		c.set(base, "s"+strconv.Itoa(base))
+		name := c.localName(base, pc)
+		c.line("local %s = %s", name, call)
+		c.set(base, name)
 		return
 	}
 	if nres > 32 {
@@ -51,7 +50,7 @@ func (c *gen) call(in parse.Ins, code byte, tail bool) {
 	}
 	lhs := make([]string, nres)
 	for i := 0; i < nres; i++ {
-		lhs[i] = "s" + strconv.Itoa(base+i)
+		lhs[i] = c.localName(base+i, pc)
 		c.set(base+i, lhs[i])
 	}
 	c.line("local %s = %s", strings.Join(lhs, ", "), call)

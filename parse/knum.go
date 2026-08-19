@@ -76,6 +76,13 @@ func (p *Proto) FNew(d uint16, c byte) *Proto {
 	return p.Child(p.GCKey(d, c))
 }
 
+func (p *Proto) NumKey(d uint16, c byte) uint16 {
+	if int(d) < len(p.KNum) {
+		return d
+	}
+	return uint16(c)
+}
+
 func (p *Proto) Num(d uint16) (KNum, bool) {
 	if int(d) >= len(p.KNum) {
 		return KNum{}, false

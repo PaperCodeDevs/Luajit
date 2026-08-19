@@ -1,7 +1,6 @@
 package lua
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/PaperCodeDevs/Luajit/op"
@@ -34,9 +33,9 @@ func (c *gen) tryAndOr(pc, to int) int {
 		join = " and "
 	}
 	expr := left + join + rhs
-	c.set(slot, expr)
-	c.line("local s%d = %s", slot, expr)
-	c.set(slot, "s"+strconv.Itoa(slot))
+	name := c.localName(slot, pc)
+	c.line("local %s = %s", name, expr)
+	c.set(slot, name)
 	c.mark(pc, tgt)
 	return tgt - 1
 }
@@ -58,7 +57,7 @@ func (c *gen) bodyAssign(from, to int) {
 			continue
 		}
 		in := c.p.Ins[pc]
-		c.stmt(in, c.code(in))
+		c.stmt(in, c.code(in), pc)
 	}
 }
 

@@ -17,6 +17,15 @@ func (c *gen) tryForNum(pc, to int) int {
 		return -1
 	}
 	a := int(in.A)
+	for i := 0; i < 4; i++ {
+		n := c.p.SlotName(a+i, pc)
+		if !okName(n) {
+			n = c.p.SlotName(a+i, pc+1)
+		}
+		if okName(n) {
+			c.set(a+i, n)
+		}
+	}
 	c.line("for %s = %s, %s, %s do", c.get(a+3), c.get(a), c.get(a+1), c.get(a+2))
 	c.indent++
 	c.body(pc+1, lim)
@@ -76,8 +85,9 @@ func (c *gen) tryForIn(pc, to int) int {
 	vars := make([]string, nres)
 	for i := 0; i < nres; i++ {
 		slot := base + off + 3 + i
-		vars[i] = c.get(slot)
-		c.set(slot, vars[i])
+		name := c.localName(slot, iterPC)
+		vars[i] = name
+		c.set(slot, name)
 	}
 	c.skip[iterPC] = true
 	c.skip[iterl] = true

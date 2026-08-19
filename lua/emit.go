@@ -64,6 +64,7 @@ func emitFn(b *strings.Builder, d *parse.Dump, p *parse.Proto, indent int, top b
 	for i := 0; i < int(p.Params); i++ {
 		c.set(i, "a"+strconv.Itoa(i))
 	}
+	c.bindParams()
 	if !top {
 		c.line("function(%s)", strings.Join(c.params(), ", "))
 		c.indent++
@@ -105,12 +106,30 @@ func (c *gen) params() []string {
 	n := int(c.p.Params)
 	out := make([]string, n)
 	for i := 0; i < n; i++ {
-		out[i] = "a" + strconv.Itoa(i)
+		out[i] = c.get(i)
 	}
 	if c.p.Flags&2 != 0 {
 		out = append(out, "...")
 	}
 	return out
+}
+
+func (c *gen) bindParams() {
+	for i := 0; i < int(c.p.Params); i++ {
+		if n := c.p.SlotName(i, 0); okName(n) {
+			c.set(i, n)
+		}
+	}
+}
+
+func (c *gen) localName(slot, pc int) string {
+	if n := c.p.SlotName(slot, pc); okName(n) {
+		return n
+	}
+	if n := c.p.SlotName(slot, pc+1); okName(n) {
+		return n
+	}
+	return "s" + strconv.Itoa(slot)
 }
 
 func (c *gen) line(format string, args ...any) {

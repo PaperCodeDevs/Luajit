@@ -8,7 +8,7 @@ import (
 	"github.com/PaperCodeDevs/Luajit/parse"
 )
 
-func (c *gen) stmt(in parse.Ins, code byte) {
+func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 	a := int(in.A)
 	if code == op.OpISNES && op.MagicRet(in.A, in.D) {
 		c.line("return")
@@ -33,7 +33,7 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpKSHORT:
 		c.set(a, shortInt(in.D))
 	case op.OpKNUM:
-		c.set(a, c.numD(in.D))
+		c.set(a, c.numAD(in.D, in.C))
 	case op.OpKPRI:
 		c.set(a, pri(in.D))
 	case op.OpKNIL:
@@ -47,7 +47,7 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpUSETS:
 		c.line("%s = %s", c.uv(a), c.gcstr(in.D, in.C))
 	case op.OpUSETN:
-		c.line("%s = %s", c.uv(a), c.numD(in.D))
+		c.line("%s = %s", c.uv(a), c.numAD(in.D, in.C))
 	case op.OpUSETP:
 		c.line("%s = %s", c.uv(a), pri(in.D))
 	case op.OpFNEW:
@@ -61,17 +61,25 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 		var inner strings.Builder
 		emitFn(&inner, c.d, ch, c.indent, false)
 		c.set(a, strings.TrimSpace(inner.String()))
-		c.line("local s%d = %s", a, c.get(a))
-		c.set(a, "s"+strconv.Itoa(a))
+		name := c.localName(a, pc)
+		c.line("local %s = %s", name, c.get(a))
+		c.set(a, name)
 	case op.OpTNEW:
 		c.set(a, "{}")
 	case op.OpTDUP:
 		lit := c.dup(in.D, in.C)
-		c.line("local s%d = %s", a, lit)
-		c.set(a, "s"+strconv.Itoa(a))
+		name := c.localName(a, pc)
+		c.line("local %s = %s", name, lit)
+		c.set(a, name)
 	case op.OpGGET:
+		if c.p.Str(c.p.GCKey(in.D, in.C)) == "" {
+			return
+		}
 		c.set(a, c.gcname(in.D, in.C))
 	case op.OpGSET:
+		if c.p.Str(c.p.GCKey(in.D, in.C)) == "" {
+			return
+		}
 		c.line("%s = %s", c.gcname(in.D, in.C), c.get(a))
 	case op.OpTGETV:
 		c.set(a, c.get(int(in.B))+"["+c.get(int(in.C))+"]")
@@ -100,15 +108,16 @@ func (c *gen) stmt(in parse.Ins, code byte) {
 	case op.OpCAT:
 		c.set(a, c.cat(int(in.B), int(in.C)))
 	case op.OpCALL, op.OpCALLM:
-		c.call(in, code, false)
+		c.call(in, code, false, pc)
 	case op.OpCALLT, op.OpCALLMT:
-		c.call(in, code, true)
+		c.call(in, code, true, pc)
 	case op.OpRET, op.OpRETM, op.OpRET0, op.OpRET1:
 		c.ret(in, code)
 	case op.OpVARG:
 		c.set(a, "...")
-		c.line("local s%d = ...", a)
-		c.set(a, "s"+strconv.Itoa(a))
+		name := c.localName(a, pc)
+		c.line("local %s = ...", name)
+		c.set(a, name)
 	case op.OpBAND:
 		c.set(a, "bit.band("+c.get(int(in.B))+", "+c.get(int(in.C))+")")
 	case op.OpBOR:

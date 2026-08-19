@@ -22,6 +22,19 @@ func isIdent(s string) bool {
 	return true
 }
 
+func okName(s string) bool {
+	if !isIdent(s) {
+		return false
+	}
+	switch s {
+	case "and", "break", "do", "else", "elseif", "end", "false", "for", "function",
+		"goto", "if", "in", "local", "nil", "not", "or", "repeat", "return",
+		"then", "true", "until", "while":
+		return false
+	}
+	return true
+}
+
 func (c *gen) body(from, to int) {
 	if c.skip == nil {
 		c.skip = map[int]bool{}
@@ -69,7 +82,7 @@ func (c *gen) body(from, to int) {
 			continue
 		}
 		in := c.p.Ins[pc]
-		c.stmt(in, c.code(in))
+		c.stmt(in, c.code(in), pc)
 	}
 }
 
@@ -163,9 +176,9 @@ func (c *gen) cmp(code byte, in parse.Ins) string {
 	case op.OpISNES:
 		return l + " ~= " + c.gcstr(in.D, in.C)
 	case op.OpISEQN:
-		return l + " == " + c.numD(in.D)
+		return l + " == " + c.numAD(in.D, in.C)
 	case op.OpISNEN:
-		return l + " ~= " + c.numD(in.D)
+		return l + " ~= " + c.numAD(in.D, in.C)
 	case op.OpISEQP:
 		return l + " == " + pri(in.D)
 	case op.OpISNEP:
@@ -191,4 +204,8 @@ func (c *gen) numD(d uint16) string {
 		return "n" + strconv.Itoa(int(d))
 	}
 	return numLit(k)
+}
+
+func (c *gen) numAD(d uint16, cc byte) string {
+	return c.numD(c.p.NumKey(d, cc))
 }

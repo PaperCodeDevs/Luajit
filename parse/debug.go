@@ -69,3 +69,20 @@ func readDebug(r *reader, p *Proto, sizedbg, numbc int) error {
 	}
 	return nil
 }
+
+func (p *Proto) SlotName(slot, pc int) string {
+	if p == nil || slot < 0 {
+		return ""
+	}
+	n := 0
+	for _, v := range p.Var {
+		if int(v.Start) > pc || pc >= int(v.End) {
+			continue
+		}
+		if n == slot {
+			return v.Name
+		}
+		n++
+	}
+	return ""
+}
