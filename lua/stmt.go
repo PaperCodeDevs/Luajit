@@ -14,7 +14,7 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 		c.line("return")
 		return
 	}
-	if skipAscii(c.d, c.p, in) {
+	if skipIns(c.d, c.p, in, pc) {
 		return
 	}
 	if skipStmt(code) {

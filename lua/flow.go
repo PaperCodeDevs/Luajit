@@ -53,7 +53,7 @@ func (c *gen) body(from, to int) {
 		if pc >= nins {
 			return
 		}
-		if skipAscii(c.d, c.p, c.p.Ins[pc]) {
+		if skipIns(c.d, c.p, c.p.Ins[pc], pc) {
 			continue
 		}
 		if n := c.tryWhile(pc, to); n >= 0 {

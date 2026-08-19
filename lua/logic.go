@@ -55,6 +55,9 @@ func (c *gen) bodyAssign(from, to int) {
 		if c.skip[pc] || pc >= nins {
 			continue
 		}
+		if skipIns(c.d, c.p, c.p.Ins[pc], pc) {
+			continue
+		}
 		if n := c.tryAndOr(pc, to); n >= 0 {
 			pc = n
 			continue
@@ -157,11 +160,11 @@ func logicJump(d *parse.Dump, p *parse.Proto, pc int) bool {
 	if d == nil || p == nil || pc+1 >= n {
 		return false
 	}
-	code := op.Norm(d.Version, p.Ins[pc].Op)
-	if code != op.OpISTC && code != op.OpISFC {
+	if skipIns(d, p, p.Ins[pc], pc) {
 		return false
 	}
-	if !cmpOK(p, p.Ins[pc], code) {
+	code := op.Norm(d.Version, p.Ins[pc].Op)
+	if code != op.OpISTC && code != op.OpISFC {
 		return false
 	}
 	if op.Norm(d.Version, p.Ins[pc+1].Op) != op.OpJMP {

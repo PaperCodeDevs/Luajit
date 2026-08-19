@@ -50,7 +50,7 @@ func (c *gen) tryForIn(pc, to int) int {
 	}
 	iterl := -1
 	for i := iterPC + 1; i < to; i++ {
-		if skipAscii(c.d, c.p, c.p.Ins[i]) {
+		if skipIns(c.d, c.p, c.p.Ins[i], i) {
 			continue
 		}
 		if !isIterL(c.opAt(i)) {

@@ -90,7 +90,10 @@ func Audit(d *parse.Dump, src string) Cover {
 				cov.note("logic")
 			}
 		}
-		for _, in := range p.Ins {
+		for pc, in := range p.Ins {
+			if skipIns(d, p, in, pc) {
+				continue
+			}
 			if op.Norm(d.Version, in.Op) != op.OpTDUP {
 				continue
 			}
@@ -152,10 +155,10 @@ func walkProto(p *parse.Proto, fn func(*parse.Proto)) {
 func protoHasElse(d *parse.Dump, p *parse.Proto) bool {
 	n := len(p.Ins)
 	for pc := 0; pc+1 < n; pc++ {
-		if !isCmp(op.Norm(d.Version, p.Ins[pc].Op)) {
+		if skipIns(d, p, p.Ins[pc], pc) {
 			continue
 		}
-		if !cmpOK(p, p.Ins[pc], op.Norm(d.Version, p.Ins[pc].Op)) {
+		if !isCmp(op.Norm(d.Version, p.Ins[pc].Op)) {
 			continue
 		}
 		if logicJump(d, p, pc) {
@@ -215,7 +218,7 @@ func elseSpill(d *parse.Dump, p *parse.Proto, pc, tgt int) bool {
 func protoHasLoop(d *parse.Dump, p *parse.Proto) bool {
 	n := len(p.Ins)
 	for pc, in := range p.Ins {
-		if skipAscii(d, p, in) {
+		if skipIns(d, p, in, pc) {
 			continue
 		}
 		if !isLoop(op.Norm(d.Version, in.Op)) {
@@ -266,7 +269,7 @@ func loopBackTo(p *parse.Proto, ver byte, l, after, header int) bool {
 func protoHasForIn(d *parse.Dump, p *parse.Proto) bool {
 	n := len(p.Ins)
 	for pc, in := range p.Ins {
-		if skipAscii(d, p, in) {
+		if skipIns(d, p, in, pc) {
 			continue
 		}
 		code := op.Norm(d.Version, in.Op)
@@ -274,7 +277,7 @@ func protoHasForIn(d *parse.Dump, p *parse.Proto) bool {
 			continue
 		}
 		for i := pc + 1; i < n; i++ {
-			if skipAscii(d, p, p.Ins[i]) {
+			if skipIns(d, p, p.Ins[i], i) {
 				continue
 			}
 			if !isIterL(op.Norm(d.Version, p.Ins[i].Op)) {

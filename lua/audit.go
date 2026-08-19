@@ -63,6 +63,9 @@ func protoHasMethod(d *parse.Dump, p *parse.Proto) bool {
 	n := len(p.Ins)
 	for pc := 0; pc+3 < n; pc++ {
 		in0 := p.Ins[pc]
+		if skipIns(d, p, in0, pc) || skipIns(d, p, p.Ins[pc+1], pc+1) || skipIns(d, p, p.Ins[pc+2], pc+2) || skipIns(d, p, p.Ins[pc+3], pc+3) {
+			continue
+		}
 		if op.Norm(d.Version, in0.Op) != op.OpTGETS {
 			continue
 		}
