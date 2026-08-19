@@ -12,6 +12,9 @@ func (c *gen) tryAndOr(pc, to int) int {
 	if code != op.OpISTC && code != op.OpISFC {
 		return -1
 	}
+	if !cmpOK(c.p, c.p.Ins[pc], code) {
+		return -1
+	}
 	nins := len(c.p.Ins)
 	if pc+1 >= nins || c.opAt(pc+1) != op.OpJMP {
 		return -1
@@ -156,6 +159,9 @@ func logicJump(d *parse.Dump, p *parse.Proto, pc int) bool {
 	}
 	code := op.Norm(d.Version, p.Ins[pc].Op)
 	if code != op.OpISTC && code != op.OpISFC {
+		return false
+	}
+	if !cmpOK(p, p.Ins[pc], code) {
 		return false
 	}
 	if op.Norm(d.Version, p.Ins[pc+1].Op) != op.OpJMP {

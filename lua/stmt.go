@@ -14,6 +14,9 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 		c.line("return")
 		return
 	}
+	if skipAscii(c.d, c.p, in) {
+		return
+	}
 	if skipStmt(code) {
 		return
 	}
@@ -52,12 +55,13 @@ func (c *gen) stmt(in parse.Ins, code byte, pc int) {
 		c.line("%s = %s", c.uv(a), pri(in.D))
 	case op.OpFNEW:
 		ch := c.p.FNew(in.D, in.C)
-		if ch != nil {
-			if c.used == nil {
-				c.used = map[*parse.Proto]bool{}
-			}
-			c.used[ch] = true
+		if ch == nil {
+			return
 		}
+		if c.used == nil {
+			c.used = map[*parse.Proto]bool{}
+		}
+		c.used[ch] = true
 		var inner strings.Builder
 		emitFn(&inner, c.d, ch, c.indent, false)
 		c.set(a, strings.TrimSpace(inner.String()))

@@ -10,6 +10,9 @@ func (c *gen) tryIf(pc, to int) int {
 	if !isCmp(c.opAt(pc)) || pc+1 >= to || c.opAt(pc+1) != op.OpJMP {
 		return -1
 	}
+	if !cmpOK(c.p, c.p.Ins[pc], c.opAt(pc)) {
+		return -1
+	}
 	tgt := c.dest(pc + 1)
 	nins := len(c.p.Ins)
 	if tgt <= pc+2 || tgt > nins {

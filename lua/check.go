@@ -155,6 +155,9 @@ func protoHasElse(d *parse.Dump, p *parse.Proto) bool {
 		if !isCmp(op.Norm(d.Version, p.Ins[pc].Op)) {
 			continue
 		}
+		if !cmpOK(p, p.Ins[pc], op.Norm(d.Version, p.Ins[pc].Op)) {
+			continue
+		}
 		if logicJump(d, p, pc) {
 			continue
 		}
@@ -212,6 +215,9 @@ func elseSpill(d *parse.Dump, p *parse.Proto, pc, tgt int) bool {
 func protoHasLoop(d *parse.Dump, p *parse.Proto) bool {
 	n := len(p.Ins)
 	for pc, in := range p.Ins {
+		if skipAscii(d, p, in) {
+			continue
+		}
 		if !isLoop(op.Norm(d.Version, in.Op)) {
 			continue
 		}
@@ -260,11 +266,17 @@ func loopBackTo(p *parse.Proto, ver byte, l, after, header int) bool {
 func protoHasForIn(d *parse.Dump, p *parse.Proto) bool {
 	n := len(p.Ins)
 	for pc, in := range p.Ins {
+		if skipAscii(d, p, in) {
+			continue
+		}
 		code := op.Norm(d.Version, in.Op)
 		if code != op.OpITERC && code != op.OpITERN {
 			continue
 		}
 		for i := pc + 1; i < n; i++ {
+			if skipAscii(d, p, p.Ins[i]) {
+				continue
+			}
 			if !isIterL(op.Norm(d.Version, p.Ins[i].Op)) {
 				continue
 			}
